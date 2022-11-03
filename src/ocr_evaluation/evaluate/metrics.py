@@ -1,6 +1,6 @@
 import pandas as pd
 
-from evaluation.iou import word_or_symbol_pair_matching, word_or_symbol_group_pair_matching
+from evaluate.iou import word_or_symbol_pair_matching, word_or_symbol_group_pair_matching
 
 
 def text_accuracy(df, pref_1, pref_2):
