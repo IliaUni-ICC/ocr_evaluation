@@ -25,7 +25,7 @@ setup(
     url="https://github.com/IliaUni-ICC/ocr_evaluation",
     download_url="https://github.com/IliaUni-ICC/ocr_evaluation/tags",
     license="Apache 2.0",
-    package_dir={"": "src"},
+    package_dir={"": "ocr_evaluation"},
     packages=["ocr_evaluation"],
     entry_points={},
     install_requires=REQUIRED_PKGS,
