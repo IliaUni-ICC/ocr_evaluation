@@ -15,7 +15,7 @@ REQUIRED_PKGS = [
 ]
 
 setup(
-    name="iliauniiccocrevaluation",
+    name="iliauni_icc_ocr_evaluation",
     version="1.0.0",  # expected format is one of x.y.z.dev0, or x.y.z.rc1 or x.y.z (no to dashes, yes to dots)
     description="Iliauni ICC open source OCR evaluation library",
     long_description=open("README.md", encoding="utf-8").read(),
@@ -26,7 +26,7 @@ setup(
     download_url="https://github.com/IliaUni-ICC/ocr_evaluation/tags",
     license="Apache 2.0",
     package_dir={"": "ocr_evaluation"},
-    packages=["ocr_evaluation"],
+    packages=find_packages("ocr_evaluation"),
     entry_points={},
     install_requires=REQUIRED_PKGS,
     extras_require={},
