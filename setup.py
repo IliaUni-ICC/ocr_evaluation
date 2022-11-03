@@ -29,7 +29,7 @@ setup(
     packages=find_packages("src"),
     entry_points={},
     install_requires=REQUIRED_PKGS,
-    extras_require=[],
+    extras_require={},
     python_requires=">=3.7.0",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
