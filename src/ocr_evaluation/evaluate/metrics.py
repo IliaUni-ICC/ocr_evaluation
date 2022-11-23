@@ -200,47 +200,51 @@ def evaluate_by_words(pred_df, target_df, pred_pref='Pred_', target_pref='Target
     if not pred_df.empty and not target_df.empty:
 
         show_hist = kwargs.get("show_hist", False)
-        text_pairs = word_or_symbol_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref, pref2=target_pref)
-        levenstein_similarities, levenstein_distances, edit_operations = levenstein_metrics(
-            df=text_pairs, pref_1=pred_pref, pref_2=target_pref
-        )
 
-        levenstein_similarities_stats = {
-            **levenstein_similarities.describe().to_dict(),
-            "values": levenstein_similarities.tolist()
-        }
-        levenstein_distances_stats = {
-            **levenstein_distances.describe().to_dict(),
-            "values": levenstein_distances.tolist()
-        }
-        iou_stats = {
-            **text_pairs.iou.describe().to_dict(),
-            "values": text_pairs.iou.tolist()
-        }
+        word_pairs_df = word_or_symbol_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref, pref2=target_pref)
+
+        _similarities, _distances, _edits = levenstein_metrics(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref)
+
+        word_pairs_df['levenstein_similarities'] = _similarities
+        word_pairs_df['levenstein_distances'] = _distances
+        word_pairs_df['edit_operations'] = _edits
+
         edit_operations_stats = {
             operation_id: pd.Series(
-                edit_operations.apply(
+                word_pairs_df['edit_operations'].apply(
                     lambda x: [f"[{item[1]}]_[{item[2]}]" for item in x if item[0] == operation_id]
                 ).sum(axis=0)).value_counts().to_dict()
             for operation_id in ["insertion", "deletion", "substitution"]
         }
 
+        report = {
+            "accuracy": text_accuracy(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "precision": text_precision(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "recall": text_recall(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "f1": text_f1(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "levenstein_similarities_stats": {
+                "mean": word_pairs_df['levenstein_similarities'].mean(),
+                "std": word_pairs_df['levenstein_similarities'].std()
+            },
+            "levenstein_distances_stats": {
+                "mean": word_pairs_df['levenstein_distances'].mean(),
+                "std": word_pairs_df['levenstein_distances'].std()
+            },
+            "edit_operations_stats": edit_operations_stats,
+            "iou_stats": {
+                "mean": word_pairs_df['iou'].mean(),
+                "std": word_pairs_df['iou'].std()
+            },
+            "word_pairs_dataframe": word_pairs_df
+        }
+
         if show_hist is True:
-            pd.Series(levenstein_similarities).plot(kind='hist', bins=20, title="Levestein Similarities")
-            pd.Series(levenstein_distances).plot(kind='hist', bins=20, title="Levestein Distances")
+            pd.Series(word_pairs_df['levenstein_similarities']).plot(kind='hist', bins=20,
+                                                                     title="Levestein Similarities")
+            pd.Series(word_pairs_df['levenstein_distances']).plot(kind='hist', bins=20, title="Levestein Distances")
             for edit_operation_id, edit_operation_data in edit_operations_stats.items():
                 pd.Series(edit_operation_data).plot(kind='barh', title=f"{edit_operation_id.capitalize()} Stats")
 
-        report = {
-            "accuracy": text_accuracy(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "precision": text_precision(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "recall": text_recall(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "f1": text_f1(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "levenstein_distances_stats": levenstein_distances_stats,
-            "levenstein_similarities_stats": levenstein_similarities_stats,
-            "iou_stats": iou_stats,
-            "edit_operations_stats": edit_operations_stats,
-        }
     else:
         report = {
             "accuracy": None,
@@ -249,8 +253,9 @@ def evaluate_by_words(pred_df, target_df, pred_pref='Pred_', target_pref='Target
             "f1": None,
             "levenstein_distances_stats": {},
             "levenstein_similarities_stats": {},
-            "iou_stats": {},
             "edit_operations_stats": {key: {} for key in ["insertion", "deletion", "substitution"]},
+            "iou_stats": {},
+            "word_pairs_dataframe": pd.DataFrame()
         }
 
     return report
@@ -260,47 +265,54 @@ def evaluate_by_word_groups(pred_df, target_df, pred_pref='Pred_', target_pref='
     if not pred_df.empty and not target_df.empty:
 
         show_hist = kwargs.get("show_hist", False)
-        text_pairs = word_or_symbol_group_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref, pref2=target_pref)
-        levenstein_similarities, levenstein_distances, edit_operations = levenstein_metrics(
-            df=text_pairs, pref_1=pred_pref, pref_2=target_pref
-        )
 
-        levenstein_similarities_stats = {
-            **levenstein_similarities.describe().to_dict(),
-            "values": levenstein_similarities.tolist()
-        }
-        levenstein_distances_stats = {
-            **levenstein_distances.describe().to_dict(),
-            "values": levenstein_distances.tolist()
-        }
-        iou_stats = {
-            **text_pairs.iou.describe().to_dict(),
-            "values": text_pairs.iou.tolist()
-        }
+        word_group_pairs_df = word_or_symbol_group_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref,
+                                                                 pref2=target_pref)
+
+        _similarities, _distances, _edits = levenstein_metrics(df=word_group_pairs_df, pref_1=pred_pref,
+                                                               pref_2=target_pref)
+
+        word_group_pairs_df['levenstein_similarities'] = _similarities
+        word_group_pairs_df['levenstein_distances'] = _distances
+        word_group_pairs_df['edit_operations'] = _edits
+
         edit_operations_stats = {
             operation_id: pd.Series(
-                edit_operations.apply(
+                word_group_pairs_df['edit_operations'].apply(
                     lambda x: [f"[{item[1]}]_[{item[2]}]" for item in x if item[0] == operation_id]
                 ).sum(axis=0)).value_counts().to_dict()
             for operation_id in ["insertion", "deletion", "substitution"]
         }
 
+        report = {
+            "accuracy": text_accuracy(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "precision": text_precision(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "recall": text_recall(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "f1": text_f1(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "levenstein_similarities_stats": {
+                "mean": word_group_pairs_df['levenstein_similarities'].mean(),
+                "std": word_group_pairs_df['levenstein_similarities'].std()
+            },
+            "levenstein_distances_stats": {
+                "mean": word_group_pairs_df['levenstein_distances'].mean(),
+                "std": word_group_pairs_df['levenstein_distances'].std()
+            },
+            "edit_operations_stats": edit_operations_stats,
+            "iou_stats": {
+                "mean": word_group_pairs_df['iou'].mean(),
+                "std": word_group_pairs_df['iou'].std()
+            },
+            "word_group_pairs_dataframe": word_group_pairs_df
+        }
+
         if show_hist is True:
-            pd.Series(levenstein_similarities).plot(kind='hist', bins=20, title="Levestein Similarities")
-            pd.Series(levenstein_distances).plot(kind='hist', bins=20, title="Levestein Distances")
+            pd.Series(word_group_pairs_df['levenstein_similarities']).plot(kind='hist', bins=20,
+                                                                           title="Levestein Similarities")
+            pd.Series(word_group_pairs_df['levenstein_distances']).plot(kind='hist', bins=20,
+                                                                        title="Levestein Distances")
             for edit_operation_id, edit_operation_data in edit_operations_stats.items():
                 pd.Series(edit_operation_data).plot(kind='barh', title=f"{edit_operation_id.capitalize()} Stats")
 
-        report = {
-            "accuracy": text_accuracy(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "precision": text_precision(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "recall": text_recall(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "f1": text_f1(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "levenstein_distances_stats": levenstein_distances_stats,
-            "levenstein_similarities_stats": levenstein_similarities_stats,
-            "iou_stats": iou_stats,
-            "edit_operations_stats": edit_operations_stats,
-        }
     else:
         report = {
             "accuracy": None,
@@ -309,130 +321,36 @@ def evaluate_by_word_groups(pred_df, target_df, pred_pref='Pred_', target_pref='
             "f1": None,
             "levenstein_distances_stats": {},
             "levenstein_similarities_stats": {},
-            "iou_stats": {},
             "edit_operations_stats": {key: {} for key in ["insertion", "deletion", "substitution"]},
+            "iou_stats": {},
+            "word_group_pairs_dataframe": pd.DataFrame()
         }
 
     return report
-
-
-def reduce_word_evaluation_results(eval_results):
-    if eval_results:
-        accuracies = pd.Series([item['accuracy'] for item in eval_results])
-        precisions = pd.Series([item['precision'] for item in eval_results])
-        recalls = pd.Series([item['recall'] for item in eval_results])
-        f1s = pd.Series([item['f1'] for item in eval_results])
-        levenstein_similarities = pd.Series(
-            [
-                pd.Series(item['levenstein_similarities_stats'].get('values', [])).mean()
-                for item in eval_results
-            ]
-        )
-        levenstein_distances = pd.Series(
-            [
-                pd.Series(item['levenstein_distances_stats'].get('values', [])).mean()
-                for item in eval_results
-            ]
-        )
-        ious = pd.Series(
-            [
-                pd.Series(item['iou_stats'].get('values', [])).mean()
-                for item in eval_results
-            ]
-        )
-
-        levenstein_similarities_stats = {
-            **levenstein_similarities.describe().to_dict(),
-            "values": levenstein_similarities.tolist()
-        }
-        levenstein_distances_stats = {
-            **levenstein_distances.describe().to_dict(),
-            "values": levenstein_distances.tolist()
-        }
-        iou_stats = {
-            **ious.describe().to_dict(),
-            "values": ious.tolist()
-        }
-
-        edit_operations_stats = {}
-        for eval_result in eval_results:
-            for edit_operation, edit_operation_data in eval_result['edit_operations_stats'].items():
-                if edit_operation not in edit_operations_stats:
-                    edit_operations_stats[edit_operation] = {}
-
-                for key, count in edit_operation_data.items():
-                    edit_operations_stats[edit_operation][key] = edit_operations_stats[edit_operation].get(key,
-                                                                                                           0) + count
-
-        summary = {
-            "accuracy": {
-                "mean": accuracies.mean(),
-                "std": accuracies.std(),
-                "values": accuracies.tolist()
-            },
-            "precision": {
-                "mean": precisions.mean(),
-                "std": precisions.std(),
-                "values": precisions.tolist(),
-            },
-            "recall": {
-                "mean": recalls.mean(),
-                "std": recalls.std(),
-                "values": recalls.tolist(),
-            },
-            "f1": {
-                "mean": f1s.mean(),
-                "std": f1s.std(),
-                "values": f1s.tolist(),
-            },
-            "document_count": len(eval_results),
-            "levenstein_distances_stats": levenstein_distances_stats,
-            "levenstein_similarities_stats": levenstein_similarities_stats,
-            "iou_stats": iou_stats,
-            "edit_operations_stats": edit_operations_stats,
-        }
-
-
-    else:
-        summary = {
-            "accuracy": {},
-            "precision": {},
-            "recall": {},
-            "f1": {},
-            "document_count": 0,
-            "levenstein_distances_stats": {},
-            "levenstein_similarities_stats": {},
-            "iou_stats": {},
-            "edit_operations_stats": {key: {} for key in ["insertion", "deletion", "substitution"]},
-        }
-
-    return summary
 
 
 def evaluate_by_symbols(pred_df, target_df, pred_pref='Pred_', target_pref='Target_', **kwargs):
     if not pred_df.empty and not target_df.empty:
 
         show_hist = kwargs.get("show_hist", False)
-        text_pairs = word_or_symbol_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref, pref2=target_pref)
+        symbol_pairs_df = word_or_symbol_pair_matching(df1=pred_df, df2=target_df, pref1=pred_pref, pref2=target_pref)
 
-        confusion_matrix, pair_counts = symbol_confusion_matrix(text_pairs, pref_1=pred_pref, pref_2=target_pref)
-
-        iou_stats = {
-            **text_pairs.iou.describe().to_dict(),
-            "values": text_pairs.iou.tolist()
-        }
+        confusion_matrix, pair_counts = symbol_confusion_matrix(symbol_pairs_df, pref_1=pred_pref, pref_2=target_pref)
 
         if show_hist is True:
             pd.Series(pair_counts).plot(kind='barh', title="Symbol Pair Counts")
 
         report = {
-            "accuracy": text_accuracy(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "precision": text_precision(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "recall": text_recall(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
-            "f1": text_f1(df=text_pairs, pref_1=pred_pref, pref_2=target_pref),
+            "accuracy": text_accuracy(df=symbol_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "precision": text_precision(df=symbol_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "recall": text_recall(df=symbol_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "f1": text_f1(df=symbol_pairs_df, pref_1=pred_pref, pref_2=target_pref),
             "confusion_matrix": confusion_matrix,
             "pair_counts": pair_counts,
-            "iou_stats": iou_stats,
+            "iou_stats": {
+                "mean": symbol_pairs_df['iou'].mean(),
+                "std": symbol_pairs_df['iou'].std()
+            },
         }
     else:
         report = {
@@ -446,144 +364,3 @@ def evaluate_by_symbols(pred_df, target_df, pred_pref='Pred_', target_pref='Targ
         }
 
     return report
-
-
-def reduce_pair_counts(pair_counts):
-    reduced_pair_counts_df = pd.DataFrame()
-    columns = []
-    if pair_counts:
-        pair_counts_dict = {}
-        for pair_count in pair_counts:
-            if not pair_count.empty:
-                pair_count_dict = pair_count.set_index(pair_count.columns[:-1].tolist(), drop=True).to_dict()[
-                    pair_count.columns[-1]]
-                columns = pair_count.columns.tolist()
-            else:
-                pair_count_dict = {}
-
-            for key, value in pair_count_dict.items():
-                pair_counts_dict[key] = pair_counts_dict.get(key, 0) + value
-
-        reduced_pair_counts_df = pd.Series(pair_counts_dict).to_frame().reset_index()
-        if columns:
-            reduced_pair_counts_df.columns = columns
-
-    return reduced_pair_counts_df
-
-
-def reduce_confusion_matrices(confusion_matrices):
-    reduced_confusion_matrices_df = pd.DataFrame()
-    if confusion_matrices:
-        all_index_values = set()
-        confusion_matrices_dict = {}
-        for confusion_matrix in confusion_matrices:
-            if not confusion_matrix.empty:
-                confusion_matrix_dict = {
-                    (index, column): confusion_matrix.loc[index, column]
-                    for index in confusion_matrix.index
-                    for column in confusion_matrix.columns
-                }
-            else:
-                confusion_matrix_dict = {}
-
-            for key, value in confusion_matrix_dict.items():
-                all_index_values.add(key[0])
-                all_index_values.add(key[1])
-                confusion_matrices_dict[key] = confusion_matrices_dict.get(key, 0) + value
-
-        all_index_values = list(sorted(list(all_index_values)))
-        reduced_confusion_matrices_df = pd.DataFrame(
-            [
-                [
-                    confusion_matrices_dict.get((index, column), 0)
-                    for column in all_index_values
-                ]
-                for index in all_index_values
-            ],
-            columns=all_index_values,
-            index=all_index_values,
-        )
-
-    return reduced_confusion_matrices_df
-
-
-def reduce_symbol_evaluation_results(eval_results):
-    """
-    all_symbols = list(sorted(set(df[f'{pref_1}text'].tolist() + df[f'{pref_2}text'].tolist())))
-    pair_value_counts = df[
-        [f'{pref_1}text', f'{pref_2}text']
-    ].value_counts()
-
-    pair_cnts = pair_value_counts.reset_index().rename({0: "count"}, axis=1).sort_values(
-        by=[f'{pref_1}text', f'{pref_2}text'], ascending=True)
-
-    pair_value_counts_dict = pair_value_counts.to_dict()
-
-    confusion_matrix = pd.DataFrame(
-        [
-            [pair_value_counts_dict.get((symbol1, symbol2), 0) for symbol2 in all_symbols]
-            for symbol1 in all_symbols
-        ],
-        columns=all_symbols,
-        index=all_symbols,
-    )
-    """
-    if eval_results:
-        accuracies = pd.Series([item['accuracy'] for item in eval_results])
-        precisions = pd.Series([item['precision'] for item in eval_results])
-        recalls = pd.Series([item['recall'] for item in eval_results])
-        f1s = pd.Series([item['f1'] for item in eval_results])
-        confusion_matrices = [item['confusion_matrix'] for item in eval_results]
-        pair_counts = [item['pair_counts'] for item in eval_results]
-        ious = pd.Series(
-            [
-                pd.Series(item['iou_stats'].get('values', [])).mean()
-                for item in eval_results
-            ]
-        )
-
-        iou_stats = {
-            **ious.describe().to_dict(),
-            "values": ious.tolist()
-        }
-
-        summary = {
-            "accuracy": {
-                "mean": accuracies.mean(),
-                "std": accuracies.std(),
-                "values": accuracies.tolist()
-            },
-            "precision": {
-                "mean": precisions.mean(),
-                "std": precisions.std(),
-                "values": precisions.tolist(),
-            },
-            "recall": {
-                "mean": recalls.mean(),
-                "std": recalls.std(),
-                "values": recalls.tolist(),
-            },
-            "f1": {
-                "mean": f1s.mean(),
-                "std": f1s.std(),
-                "values": f1s.tolist(),
-            },
-            "document_count": len(eval_results),
-            "pair_counts": reduce_pair_counts(pair_counts),
-            "confusion_matrix": reduce_confusion_matrices(confusion_matrices),
-            "iou_stats": iou_stats,
-        }
-
-    else:
-        summary = {
-            "accuracy": {},
-            "precision": {},
-            "recall": {},
-            "f1": {},
-            "document_count": 0,
-            "pair_counts": pd.DataFrame(),
-            "confusion_matrix": pd.DataFrame(),
-            "iou_stats": {},
-        }
-
-    return summary
