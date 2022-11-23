@@ -6,7 +6,7 @@ class FiftyOneOcr:
     def __init__(self, data):
         self.data = data
 
-    def get_word_annotations(self, convert_bbox: bool = True) -> pd.DataFrame:
+    def get_detections(self, convert_bbox: bool = True) -> pd.DataFrame:
         """Returns dataframe of detections where each row represents independent word annotation
 
         Args:

@@ -2,7 +2,7 @@ import copy
 
 from datasets import load_dataset
 
-from src.ocr_evaluation.evaluate.metrics import evaluate_by_words
+from src.ocr_evaluation.evaluate.metrics import evaluate_by_words, evaluate_by_word_groups
 from src.ocr_evaluation.ocr.fiftyone import FiftyOneOcr
 import json
 
@@ -34,11 +34,11 @@ def test_word_evaluation_google_ocr():
     except:
         tocr_official = copy.deepcopy(dataset_sample)
 
-    annotations_df_ground_truth = FiftyOneOcr(data=dataset_sample).get_word_annotations(convert_bbox=True)
-    annotations_df_google_ocr = FiftyOneOcr.from_google_ocr(ocr=gocr).get_word_annotations(convert_bbox=True)
-    annotations_df_tesseract_ocr_iliauni = FiftyOneOcr.from_google_ocr(ocr=tocr_iliauni).get_word_annotations(
+    annotations_df_ground_truth = FiftyOneOcr(data=dataset_sample).get_detections(convert_bbox=True)
+    annotations_df_google_ocr = FiftyOneOcr.from_google_ocr(ocr=gocr).get_detections(convert_bbox=True)
+    annotations_df_tesseract_ocr_iliauni = FiftyOneOcr.from_google_ocr(ocr=tocr_iliauni).get_detections(
         convert_bbox=True)
-    annotations_df_tesseract_ocr_official = FiftyOneOcr.from_google_ocr(ocr=tocr_official).get_word_annotations(
+    annotations_df_tesseract_ocr_official = FiftyOneOcr.from_google_ocr(ocr=tocr_official).get_detections(
         convert_bbox=True)
 
     eval_results_gocr = evaluate_by_words(annotations_df_ground_truth, annotations_df_google_ocr, pref1="Pred_",
@@ -49,6 +49,18 @@ def test_word_evaluation_google_ocr():
                                                   pref2="Tar_")
 
     eval_results_tocr_official = evaluate_by_words(annotations_df_ground_truth, annotations_df_tesseract_ocr_official,
+                                                   pref1="Pred_",
+                                                   pref2="Tar_")
+
+
+    eval_results_gocr = evaluate_by_word_groups(annotations_df_ground_truth, annotations_df_google_ocr, pref1="Pred_",
+                                          pref2="Tar_")
+
+    eval_results_tocr_iliauni = evaluate_by_word_groups(annotations_df_ground_truth, annotations_df_tesseract_ocr_iliauni,
+                                                  pref1="Pred_",
+                                                  pref2="Tar_")
+
+    eval_results_tocr_official = evaluate_by_word_groups(annotations_df_ground_truth, annotations_df_tesseract_ocr_official,
                                                    pref1="Pred_",
                                                    pref2="Tar_")
 

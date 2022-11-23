@@ -309,7 +309,7 @@ def get_connected_components(ocr1_df, ocr2_df):
         if len(df) == 1:
             return df
         else:
-            _df = df.iloc[0, :]
+            _df = df.iloc[[0], :]
             _bboxes = np.array(df["bounding_box"].values.tolist())
 
 
