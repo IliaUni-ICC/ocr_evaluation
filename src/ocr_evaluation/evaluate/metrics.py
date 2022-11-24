@@ -33,6 +33,34 @@ def text_f1(df, pref_1, pref_2):
     return f1
 
 
+def cer(edit_operations):
+    """
+    Character error rate can be computed as:
+
+    CER = (S + D + I) / N = (S + D + I) / (S + D + C)
+
+    where:
+
+    S is the number of substitutions,
+    D is the number of deletions,
+    I is the number of insertions,
+    C is the number of correct characters,
+    N is the number of characters in the reference (N=S+D+C).
+
+    reference: https://huggingface.co/spaces/evaluate-metric/cer
+    """
+    EPS = 1e-5
+
+    all_edit_operations = pd.Series(edit_operations.sum())
+
+    s = all_edit_operations.apply(lambda x: x[0] == 'substitution').sum()
+    d = all_edit_operations.apply(lambda x: x[0] == 'deletion').sum()
+    i = all_edit_operations.apply(lambda x: x[0] == 'insertion').sum()
+    c = all_edit_operations.apply(lambda x: x[0] == 'match').sum()
+
+    return (s + d + i) / (s + d + c) + EPS
+
+
 def symbol_confusion_matrix(df, pref_1, pref_2):
     all_symbols = list(sorted(set(df[f'{pref_1}text'].tolist() + df[f'{pref_2}text'].tolist())))
     pair_value_counts = df[
@@ -222,6 +250,7 @@ def evaluate_by_words(pred_df, target_df, pred_pref='Pred_', target_pref='Target
             "precision": text_precision(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
             "recall": text_recall(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
             "f1": text_f1(df=word_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "cer": cer(edit_operations=word_pairs_df['edit_operations']),
             "levenstein_similarities_stats": {
                 "mean": word_pairs_df['levenstein_similarities'].mean(),
                 "std": word_pairs_df['levenstein_similarities'].std()
@@ -251,6 +280,7 @@ def evaluate_by_words(pred_df, target_df, pred_pref='Pred_', target_pref='Target
             "precision": None,
             "recall": None,
             "f1": None,
+            "cer": None,
             "levenstein_distances_stats": {},
             "levenstein_similarities_stats": {},
             "edit_operations_stats": {key: {} for key in ["insertion", "deletion", "substitution"]},
@@ -289,6 +319,7 @@ def evaluate_by_word_groups(pred_df, target_df, pred_pref='Pred_', target_pref='
             "precision": text_precision(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
             "recall": text_recall(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
             "f1": text_f1(df=word_group_pairs_df, pref_1=pred_pref, pref_2=target_pref),
+            "cer": cer(edit_operations=word_group_pairs_df['edit_operations']),
             "levenstein_similarities_stats": {
                 "mean": word_group_pairs_df['levenstein_similarities'].mean(),
                 "std": word_group_pairs_df['levenstein_similarities'].std()
@@ -319,6 +350,7 @@ def evaluate_by_word_groups(pred_df, target_df, pred_pref='Pred_', target_pref='
             "precision": None,
             "recall": None,
             "f1": None,
+            "cer": None,
             "levenstein_distances_stats": {},
             "levenstein_similarities_stats": {},
             "edit_operations_stats": {key: {} for key in ["insertion", "deletion", "substitution"]},
